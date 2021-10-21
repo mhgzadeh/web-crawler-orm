@@ -20,6 +20,12 @@ class User(BaseModel):
     username = CharField(max_length=32)
     password = CharField(max_length=32)
 
+    @classmethod
+    def authenticate(cls, username, password):
+        return cls.select().where(
+            cls.username == username, cls.password == password
+        ).first()
+
 
 class Book(BaseModel):
     isbn = CharField(max_length=32)
@@ -31,6 +37,10 @@ class Author(BaseModel):
 
 
 class Shelf(BaseModel):
+    READ = 'read'
+    CURRENTLY_READING = 'currently reading'
+    WANT_TO_READ = 'want to read'
+
     name = CharField(max_length=32)
     user = ForeignKeyField(User, backref="shelves")
 
@@ -44,6 +54,12 @@ class BookShelf(BaseModel):
     rate = SmallIntegerField()
     comment = TextField()
     created_time = DateTimeField(default=datetime.now())
+
+    def change_to_read(self):
+        print(self.user.shelves.where(Shelf.name == Shelf.READ))
+        read_shelf = self.user.shelves.where(Shelf.name == Shelf.READ).first()
+        self.shelf = read_shelf
+        self.save()
 
 
 class BookAuthor(BaseModel):
