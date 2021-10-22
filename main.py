@@ -2,6 +2,7 @@ from importer import UserImporter, BookImporter, AuthorImporter, BookAuthorImpor
 from models import database, User, Book, Author, Shelf, BookShelf, BookAuthor, BookTranslator, UserAuthorRelation, \
     UserRelation
 from reports import show_users, show_books, show_Book_shelves
+from peewee import fn
 
 
 def say_hi():
@@ -47,6 +48,51 @@ def show_user_data(username='hosein', password='654321'):
     # )
 
 
+def show_book_rates():
+    query = BookShelf.select(
+        BookShelf.book,
+        fn.AVG(BookShelf.rate).alias('rates_avg'),
+        fn.SUM(BookShelf.rate).alias('rates_sum'),
+        fn.COUNT(BookShelf.rate).alias('rates_count')
+    ).group_by(BookShelf.book)
+
+    for q in query:
+        print(q.book.id, q.rates_avg, q.rates_sum / q.rates_count)
+
+
+def show_book_shelves():
+    query = BookShelf.select(
+        BookShelf.user,
+        BookShelf.shelf,
+        fn.COUNT(BookShelf.book).alias('books_count')
+    ).group_by(BookShelf.shelf).order_by()
+
+    for q in query:
+        print(q.user.username, q.shelf.name, q.books_count)
+
+
+def show_all_book_shelves():
+    query = BookShelf.select()  # hit 1
+
+    for q in query:
+        print(q.rate)  # hit 2
+        print(q.user.username)  # hit 3
+        print(q.book.name)  # hit 4
+        print('#' * 20)
+
+
+def show_all_book_shelves_optimized():
+    query = BookShelf.select().join(User) \
+        .switch(BookShelf).join(Book) \
+        .switch(BookShelf).join(Shelf)  # hit 1
+
+    for q in query:
+        print(q.rate)  # no hit
+        print(q.user.username)  # no hit
+        print(q.book.name)  # no hit 4
+        print('#' * 20)
+
+
 def show_data():
     print("#" * 79)
     show_users()
@@ -62,8 +108,12 @@ if __name__ == "__main__":
     # create_tables()
     # load_data()
     # show_data()
-    show_user_data()
+    # show_user_data()
     # bs = BookShelf.get_by_id(2)
     # print(bs.shelf.name)
     # bs.change_to_read()
     # print(bs.shelf.name)
+    # show_book_rates()
+    show_book_shelves()
+    # show_all_book_shelves()
+    show_all_book_shelves_optimized()
